@@ -1,0 +1,52 @@
+import { Character, toStrokeOrder } from "@/lib/actions"
+import HanziWriter from "hanzi-writer"
+import { useState, useRef, useEffect } from "react"
+import { StrokesBoard } from "./StrokesBoard"
+
+type CharacterViewProps = {
+    char: Character, 
+    image?: boolean, 
+    onClick: () => void,
+    show?: boolean, 
+    selected?: boolean,
+    x: number
+    y: number
+}
+
+export function CharacterView({
+    char, 
+    onClick, 
+    show, image, 
+    selected
+  }: CharacterViewProps){
+    
+    const ref = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+      if (selected) {
+        ref.current?.focus();
+        ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, [selected])
+    
+    return (
+      <div 
+        className={`
+            p-3 border-2 border-transparent 
+            rounded-lg text-center 
+            ${selected ? "border-white": ""} 
+            ${image ? "sticky top-0 max-h-screen" : ""}`}
+        ref={ref}
+        autoFocus={selected}
+        onClick={onClick}>
+        {image && <StrokesBoard character={char.character}></StrokesBoard>}
+        <h2 className="block">{char.character}</h2>
+        {show 
+          ? <div>
+            {char.pinyin.map((p, i) => (<span key={i} className="m-2">{p}</span>))}
+          </div>
+          : <span className="block">{char.pinyin.at(0) ?? ''} </span>
+        }      
+      </div>
+    )
+  }
