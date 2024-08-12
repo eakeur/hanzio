@@ -1,29 +1,26 @@
 'use server'
 
+import { translateText } from "@/actions/translate";
 import pinyin from "pinyin";
+import { v4 as uuidv4 } from 'uuid';
 
-export type Character = {
-  strokeOrderUrl: string
-  character: string
-  pinyin: string[]
-}
 
 export type CharacterGroup = {
   stringChracters: string[]
-  characters: Character[]
-  translations: string[]
+  characters: ChineseCharacter[]
+  translations: string
 }
 
-export async function getCharcaterMap(str: string) : Promise<Character> {
+export async function getCharcaterMap(str: string) : Promise<ChineseCharacter> {
   const char = str.split("").at(0) ?? ""
 
   return {
-    character: char,
+    id: uuidv4(),
+    value: char,
     pinyin: pinyin(char, {
       heteronym: true
     }).at(0) ?? [],
-    strokeOrderUrl: ""
-  } satisfies Character
+  } satisfies ChineseCharacter
 }
 
 export async function handleSubmit(formData: FormData) {
@@ -37,7 +34,7 @@ export async function handleSubmit(formData: FormData) {
       .map(s => ({
         stringChracters: s.trim().split("").filter((t) => t != ""),
         characters: [],
-        translations: []
+        translations: ""
       }) as CharacterGroup)
       .filter((t) => t.stringChracters.length > 0) ?? []
 
@@ -50,29 +47,14 @@ export async function handleSubmit(formData: FormData) {
 
     return charGroups
       .map(group => {
-        group.characters = group.characters.filter(g => g.character != "")
+        group.characters = group.characters.filter(g => g.value != "")
         return group
       })
       .filter(group => group.characters.length > 0)
 }
 
 async function getTranslations(str: string){
-  const res = await fetch("http://localhost:7143/translate", {
-    method: "POST",
-    body: JSON.stringify({
-      q: str,
-      source: "zh",
-      target: "en",
-      format: "text",
-      alternatives: 2,
-      api_key: ""
-    }),
-    headers: { "Content-Type": "application/json" }
-  });
-
-  const data = await res.json();
-
-  return [(data.translaredText ?? ""), ...(data.alternatives ?? [])]
+  return translateText(str).then(r => r)
 }
 
 const memo: {[key: string]: string} = {}
